@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(dotnet sln NYCastings.slnx add \"NYcastings.API\\\\NYCastings.API.csproj\" \"NYCastings.API.Core\\\\NYCastings.API.Core.csproj\" \"NYCastings.API.Infrastructure\\\\NYCastings.API.Infrastructure.csproj\")",
+      "PowerShell(winget install --id Microsoft.DotNet.Runtime.8 -e --accept-package-agreements --accept-source-agreements)",
+      "PowerShell(Get-Process -Name \"NYCastings.API\",\"dotnet\" -ErrorAction SilentlyContinue)",
+      "PowerShell(Stop-Process -Force -ErrorAction SilentlyContinue)",
+      "PowerShell(sqlcmd -S \"\\(localdb\\)\\\\MSSQLLocalDB\" -Q \"SELECT DB_NAME\\(\\), @@VERSION\" -C 2>&1)",
+      "PowerShell(sqlcmd -S \"\\(localdb\\)\\\\MSSQLLocalDB\" -Q \"SELECT name FROM sys.databases\" -C 2>&1)",
+      "PowerShell(Get-Process -Name \"NYCastings.API\",\"dotnet\",\"iisexpress\" -ErrorAction SilentlyContinue)"
+    ]
+  }
+}

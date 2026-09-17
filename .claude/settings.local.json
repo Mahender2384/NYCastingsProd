@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(dotnet build 2>&1)",
+      "PowerShell(dotnet build \"NYcastings.API\\\\NYCastings.API.csproj\" 2>&1)"
+    ]
+  }
+}
