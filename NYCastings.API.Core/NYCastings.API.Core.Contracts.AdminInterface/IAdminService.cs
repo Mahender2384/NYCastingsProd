@@ -73,6 +73,8 @@ public interface IAdminService
 
 	Task<SubscriptionDetailsModel> GetSubscriptionDetailsByEmail(string email);
 
+	Task<List<SubscriptionDetailsModel>> GetActiveSubscribersAsync();
+
 	bool UpdateUserResumeStatus(UserResumeStatusModel model);
 
 	bool GetUserResumeStatus(int userId);

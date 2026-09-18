@@ -925,6 +925,67 @@ public class AdminService : BaseApiService, IAdminService
 			select s).First();
 	}
 
+	public async Task<List<SubscriptionDetailsModel>> GetActiveSubscribersAsync()
+	{
+		HttpClient client = _httpFactory.CreateClient();
+		client.Timeout = TimeSpan.FromSeconds(30.0);
+		byte[] authBytes = Encoding.UTF8.GetBytes(_apiKey + ":");
+		client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", Convert.ToBase64String(authBytes));
+		List<SubscriptionDetailsModel> activeSubscribers = new List<SubscriptionDetailsModel>();
+		string statusFilter = Uri.EscapeDataString("[\"active\",\"in_trial\",\"non_renewing\"]");
+		string subUrl = $"https://{_site}.chargebee.com/api/v2/subscriptions?status[in]={statusFilter}&limit=100&sort_by[asc]=created_at";
+		string offset = null;
+		do
+		{
+			string pageUrl = ((offset == null) ? subUrl : (subUrl + "&offset=" + Uri.EscapeDataString(offset)));
+			HttpResponseMessage response = await client.GetAsync(pageUrl);
+			if (!response.IsSuccessStatusCode)
+			{
+				string errorBody = await response.Content.ReadAsStringAsync();
+				throw new Exception($"Chargebee API error ({(int)response.StatusCode}): {errorBody}");
+			}
+			dynamic result = JsonConvert.DeserializeObject(await response.Content.ReadAsStringAsync());
+			if (result?.list == null)
+			{
+				break;
+			}
+			foreach (dynamic item in result.list)
+			{
+				dynamic sub = item.subscription;
+				dynamic cust = item.customer;
+				string status = (string)sub.status;
+				object obj;
+				switch (status)
+				{
+				default:
+					obj = status;
+					break;
+				case "active":
+				case "in_trial":
+				case "non_renewing":
+					obj = "active";
+					break;
+				}
+				string frontendStatus = (string)obj;
+				activeSubscribers.Add(new SubscriptionDetailsModel
+				{
+					CustomerEmail = (string)(cust?.email ?? ""),
+					CustomerName = ((string)(cust?.first_name ?? "") + " " + (string)(cust?.last_name ?? "")).Trim(),
+					PlanName = (string)sub.plan_id,
+					SubscriptionId = (string)sub.id,
+					Status = frontendStatus,
+					NextBillingDate = ((sub.next_billing_at != null) ? new DateTime?(DateTimeOffset.FromUnixTimeSeconds((long)sub.next_billing_at).UtcDateTime) : ((DateTime?)null)),
+					CreatedDate = ((sub.created_at != null) ? new DateTime?(DateTimeOffset.FromUnixTimeSeconds((long)sub.created_at).UtcDateTime) : ((DateTime?)null)),
+					UpdatedDate = ((sub.updated_at != null) ? new DateTime?(DateTimeOffset.FromUnixTimeSeconds((long)sub.updated_at).UtcDateTime) : ((DateTime?)null)),
+					Amount = ((sub.plan_amount != null) ? ((decimal)sub.plan_amount / 100m) : 0m)
+				});
+			}
+			offset = ((result.next_offset != null) ? ((string)result.next_offset) : null);
+		}
+		while (!string.IsNullOrEmpty(offset));
+		return activeSubscribers;
+	}
+
 	public bool UpdateUserResumeStatus(UserResumeStatusModel model)
 	{
 		string procedureName = "USP_UPDATE_USER_RESUME_STATUS";
@@ -1479,7 +1540,7 @@ public class AdminService : BaseApiService, IAdminService
 		string paragraphs = string.Join("", from l in (messageBody ?? "").Replace("\r\n", "\n").Split('\n')
 			where !string.IsNullOrWhiteSpace(l)
 			select "<p style='margin:0 0 16px;'>" + l + "</p>");
-		return $"<!DOCTYPE html>\r\n            <html>\r\n            <head>\r\n              <meta charset='UTF-8'/>\r\n              <meta name='viewport' content='width=device-width, initial-scale=1.0'/>\r\n            </head>\r\n            <body style='margin:0;padding:0;background:#f4f4f4;font-family:Arial,sans-serif;font-size:14px;color:#333333;'>\r\n\r\n            <table width='100%' cellpadding='0' cellspacing='0' border='0' style='background:#f4f4f4;'>\r\n            <tr><td align='center' style='padding:20px 0;'>\r\n\r\n              <table width='600' cellpadding='0' cellspacing='0' border='0'\r\n                     style='background:#ffffff;border:1px solid #dddddd;'>\r\n\r\n                <!-- HEADER -->\r\n                <tr>\r\n                  <td style='background:#333333;padding:0;text-align:center;'>\r\n                    <img src='https://files.constantcontact.com/82886fe2301/302cc6b2-5b9a-4673-8b39-143010d6b262.jpg?rdr=true'\r\n                         alt='DirectSubmit' width='600'\r\n                         style='display:block;width:100%;max-width:600px;border:0;'/>\r\n                  </td>\r\n                </tr>\r\n\r\n                <!-- BLUE BANNER -->\r\n                <tr>\r\n                  <td style='background:#789eeb;padding:14px 30px;'>\r\n                    <span style='color:#ffffff;font-size:18px;font-weight:bold;'>\r\n                      {safeSubject}\r\n                    </span>\r\n                  </td>\r\n                </tr>\r\n\r\n                <!-- BODY — plain paragraphs only -->\r\n                <tr>\r\n                  <td style='background:#ffffff;padding:28px 30px;\r\n                             font-family:Arial,sans-serif;font-size:14px;\r\n                             color:#333333;line-height:1.6;'>\r\n\r\n                    <p style='margin:0 0 16px;'>Hi,</p>\r\n\r\n                    {paragraphs}\r\n\r\n                    <p style='margin:24px 0 24px;'>\r\n                      <a href='https://directsubmit.nycastings.com/login'\r\n                         style='background:#789eeb;color:#ffffff;\r\n                                padding:12px 28px;text-decoration:none;\r\n                                border-radius:4px;font-size:14px;\r\n                                font-weight:bold;display:inline-block;'>\r\n                        Login to Your Account\r\n                      </a>\r\n                    </p>\r\n\r\n                    <p style='margin:0;'>\r\n                      Thank you,<br/>\r\n                      The DirectSubmit Team\r\n                    </p>\r\n\r\n                  </td>\r\n                </tr>\r\n\r\n                <!-- DIVIDER -->\r\n                <tr>\r\n                  <td style='padding:0 30px;background:#ffffff;'>\r\n                    <hr style='border:none;border-top:1px solid #dddddd;margin:0;'/>\r\n                  </td>\r\n                </tr>\r\n\r\n                <!-- FOOTER -->\r\n                <tr>\r\n                  <td style='background:#ffffff;padding:14px 20px;text-align:center;\r\n                             font-family:Arial,sans-serif;font-size:12px;color:#888888;line-height:1.6;'>\r\n                    <p style='margin:0 0 4px;'>\r\n                      By using the DirectSubmit platform, you agree to the terms and conditions of our\r\n                      <a href='https://directsubmit.nycastings.com/terms-and-condition'\r\n                         target='_blank' style='color:#4d90fe;text-decoration:underline;'>Terms of Service</a>\r\n                      and\r\n                      <a href='https://directsubmit.nycastings.com/privacy-policy'\r\n                         target='_blank' style='color:#4d90fe;text-decoration:underline;'>Privacy Policy</a>.\r\n                      &copy; DirectSubmit\r\n                    </p>\r\n                    <p style='margin:0;text-align:center;background:#333333;padding:10px;font-size:13px;color:#ffffff;'>\r\n                      <a href='https://directsubmit.nycastings.com'\r\n                         style='color:#4d90fe;text-decoration:none;'>DirectSubmit.com</a>\r\n                      &nbsp;|&nbsp; 1480 Vine St. &nbsp;|&nbsp; Los Angeles, CA 90028\r\n                    </p>\r\n                  </td>\r\n                </tr>\r\n\r\n              </table>\r\n\r\n            </td></tr>\r\n            </table>\r\n            </body>\r\n            </html>";
+		return $"<!DOCTYPE html>\r\n            <html>\r\n            <head>\r\n              <meta charset='UTF-8'/>\r\n              <meta name='viewport' content='width=device-width, initial-scale=1.0'/>\r\n            </head>\r\n            <body style='margin:0;padding:0;background:#f4f4f4;font-family:Arial,sans-serif;font-size:14px;color:#333333;'>\r\n\r\n            <table width='100%' cellpadding='0' cellspacing='0' border='0' style='background:#f4f4f4;'>\r\n            <tr><td align='center' style='padding:20px 0;'>\r\n\r\n              <table width='600' cellpadding='0' cellspacing='0' border='0'\r\n                     style='background:#ffffff;border:1px solid #dddddd;'>\r\n\r\n                <!-- HEADER -->\r\n                <tr>\r\n                  <td style='background:#333333;padding:0;text-align:center;'>\r\n                    <img src='https://files.constantcontact.com/82886fe2301/302cc6b2-5b9a-4673-8b39-143010d6b262.jpg?rdr=true'\r\n                         alt='DirectSubmit' width='600'\r\n                         style='display:block;width:100%;max-width:600px;border:0;'/>\r\n                  </td>\r\n                </tr>\r\n\r\n                <!-- BLUE BANNER -->\r\n                <tr>\r\n                  <td style='background:#789eeb;padding:14px 30px;'>\r\n                    <span style='color:#ffffff;font-size:18px;font-weight:bold;'>\r\n                      {safeSubject}\r\n                    </span>\r\n                  </td>\r\n                </tr>\r\n\r\n                <!-- BODY — plain paragraphs only -->\r\n                <tr>\r\n                  <td style='background:#ffffff;padding:28px 30px;\r\n                             font-family:Arial,sans-serif;font-size:14px;\r\n                             color:#333333;line-height:1.6;'>\r\n\r\n                    <p style='margin:0 0 16px;'></p>\r\n\r\n                    {paragraphs}\r\n\r\n                    <p style='margin:24px 0 24px;'>\r\n                      <a href='https://directsubmit.nycastings.com/login'\r\n                         style='background:#789eeb;color:#ffffff;\r\n                                padding:12px 28px;text-decoration:none;\r\n                                border-radius:4px;font-size:14px;\r\n                                font-weight:bold;display:inline-block;'>\r\n                        Login to Your Account\r\n                      </a>\r\n                    </p>\r\n\r\n                    <p style='margin:0;'>\r\n                      Thank you,<br/>\r\n                      The DirectSubmit Team\r\n                    </p>\r\n\r\n                  </td>\r\n                </tr>\r\n\r\n                <!-- DIVIDER -->\r\n                <tr>\r\n                  <td style='padding:0 30px;background:#ffffff;'>\r\n                    <hr style='border:none;border-top:1px solid #dddddd;margin:0;'/>\r\n                  </td>\r\n                </tr>\r\n\r\n                <!-- FOOTER -->\r\n                <tr>\r\n                  <td style='background:#ffffff;padding:14px 20px;text-align:center;\r\n                             font-family:Arial,sans-serif;font-size:12px;color:#888888;line-height:1.6;'>\r\n                    <p style='margin:0 0 4px;'>\r\n                      By using the DirectSubmit platform, you agree to the terms and conditions of our\r\n                      <a href='https://directsubmit.nycastings.com/terms-and-condition'\r\n                         target='_blank' style='color:#4d90fe;text-decoration:underline;'>Terms of Service</a>\r\n                      and\r\n                      <a href='https://directsubmit.nycastings.com/privacy-policy'\r\n                         target='_blank' style='color:#4d90fe;text-decoration:underline;'>Privacy Policy</a>.\r\n                      &copy; DirectSubmit\r\n                    </p>\r\n                    <p style='margin:0;text-align:center;background:#333333;padding:10px;font-size:13px;color:#ffffff;'>\r\n                      <a href='https://directsubmit.nycastings.com'\r\n                         style='color:#4d90fe;text-decoration:none;'>DirectSubmit.com</a>\r\n                      &nbsp;|&nbsp; 1480 Vine St. &nbsp;|&nbsp; Los Angeles, CA 90028\r\n                    </p>\r\n                  </td>\r\n                </tr>\r\n\r\n              </table>\r\n\r\n            </td></tr>\r\n            </table>\r\n            </body>\r\n            </html>";
 	}
 
 	public IEnumerable<BulkEmailBatchModel> GetBulkEmailBatches(DateTime? fromDate, DateTime? toDate)

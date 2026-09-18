@@ -569,6 +569,30 @@ public class AdminController : ControllerBase
 		}
 	}
 
+	[HttpGet("GetActiveSubscribers")]
+	public async Task<IActionResult> GetActiveSubscribers()
+	{
+		try
+		{
+			List<SubscriptionDetailsModel> result = await _adminService.GetActiveSubscribersAsync();
+			return Ok(new
+			{
+				Status = "Success",
+				Count = result.Count,
+				Data = result
+			});
+		}
+		catch (Exception exception)
+		{
+			_logger.LogError(exception, "Error getting active subscribers");
+			return StatusCode(500, new
+			{
+				Status = "Error",
+				Message = "Error retrieving active subscribers."
+			});
+		}
+	}
+
 	[HttpGet("GetSubscriptionByEmail")]
 	public async Task<IActionResult> GetSubscriptionByEmail(string email)
 	{
