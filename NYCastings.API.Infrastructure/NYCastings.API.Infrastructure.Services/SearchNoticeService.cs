@@ -40,7 +40,7 @@ public class SearchNoticeService : BaseApiService, ISearchNoticeInterface
 		}
 		_dbManager = new DbManager(dbConfig.Value.NYCasting);
 		_httpContextAccessor = httpContextAccessor;
-		_emailService = new EmailService(dbConfig);
+		_emailService = new EmailService(dbConfig, configuration);
 	}
 
 	public IEnumerable<CastingNoticeResponseModel> GetFilteredCastingNotices(CastingNoticeFilterRequest filter)

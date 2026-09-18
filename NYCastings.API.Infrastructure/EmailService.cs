@@ -5,6 +5,7 @@ using System.Linq;
 using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
 using NYCasting.Core.Models;
 using NYCasting.Infrastructure.DataAccess;
@@ -15,7 +16,7 @@ public class EmailService
 {
 	private readonly DbManager _dbManager;
 
-	private const string SendGridApiKey = "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";
+	private readonly string _sendGridApiKey;
 
 	private const string FromEmailAlerts = "alerts@directsubmit.com";
 
@@ -37,16 +38,17 @@ public class EmailService
 
 	private const int BatchSize = 100;
 
-	public EmailService(IOptions<ConnectionString> dbConfig)
+	public EmailService(IOptions<ConnectionString> dbConfig, IConfiguration configuration)
 	{
 		_dbManager = new DbManager(dbConfig.Value.NYCasting);
+		_sendGridApiKey = configuration["SendGrid:ApiKey"] ?? throw new InvalidOperationException("SendGrid:ApiKey is missing in configuration.");
 	}
 
 	public bool SendEmail(string toEmail, string subject, string body)
 	{
 		try
 		{
-			SendGridClient client = new SendGridClient("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");
+			SendGridClient client = new SendGridClient(_sendGridApiKey);
 			EmailAddress emailAddress = new EmailAddress("help@directsubmit.com", "DirectSubmit");
 			EmailAddress to = new EmailAddress(toEmail);
 			SendGridMessage msg = MailHelper.CreateSingleEmail(emailAddress, to, subject, null, body);
@@ -75,7 +77,7 @@ public class EmailService
 	{
 		try
 		{
-			SendGridClient sendGridClient = new SendGridClient("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");
+			SendGridClient sendGridClient = new SendGridClient(_sendGridApiKey);
 			EmailAddress emailAddress = new EmailAddress("alerts@directsubmit.com", "DirectSubmit");
 			EmailAddress to = new EmailAddress(toEmail);
 			SendGridMessage msg = MailHelper.CreateSingleEmail(emailAddress, to, subject, null, body);
@@ -100,7 +102,7 @@ public class EmailService
 	{
 		try
 		{
-			SendGridClient sendGridClient = new SendGridClient("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");
+			SendGridClient sendGridClient = new SendGridClient(_sendGridApiKey);
 			EmailAddress emailAddress = new EmailAddress("casting@directsubmit.com", "DirectSubmit");
 			EmailAddress to = new EmailAddress(toEmail);
 			SendGridMessage msg = MailHelper.CreateSingleEmail(emailAddress, to, subject, null, body);
@@ -125,7 +127,7 @@ public class EmailService
 	{
 		try
 		{
-			SendGridClient client = new SendGridClient("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");
+			SendGridClient client = new SendGridClient(_sendGridApiKey);
 			EmailAddress emailAddress = new EmailAddress("casting@directsubmit.com", "DirectSubmit");
 			EmailAddress to = new EmailAddress(toEmail);
 			SendGridMessage msg = MailHelper.CreateSingleEmail(emailAddress, to, subject, null, body);
@@ -152,9 +154,14 @@ public class EmailService
 
 	public bool SendRoleAlertEmail(string toEmail, string subject, string body)
 	{
+		return SendRoleAlertEmail(toEmail, subject, body, out _);
+	}
+
+	public bool SendRoleAlertEmail(string toEmail, string subject, string body, out string? failureReason)
+	{
 		try
 		{
-			SendGridClient sendGridClient = new SendGridClient("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");
+			SendGridClient sendGridClient = new SendGridClient(_sendGridApiKey);
 			EmailAddress emailAddress = new EmailAddress("alerts@directsubmit.com", "DirectSubmit");
 			EmailAddress to = new EmailAddress(toEmail);
 			SendGridMessage msg = MailHelper.CreateSingleEmail(emailAddress, to, subject, null, body);
@@ -162,15 +169,18 @@ public class EmailService
 			if (response.StatusCode == HttpStatusCode.Accepted || response.StatusCode == HttpStatusCode.OK)
 			{
 				Console.WriteLine("✅ Role Alert email sent to " + toEmail);
+				failureReason = null;
 				return true;
 			}
 			string responseBody = response.Body.ReadAsStringAsync().GetAwaiter().GetResult();
 			Console.WriteLine($"❌ SendGrid error: {response.StatusCode} - {responseBody}");
+			failureReason = $"SendGrid {(int)response.StatusCode}: {responseBody}";
 			return false;
 		}
 		catch (Exception ex)
 		{
 			Console.WriteLine("❌ Email exception: " + ex.Message);
+			failureReason = ex.Message;
 			return false;
 		}
 	}
@@ -188,7 +198,7 @@ public class EmailService
 				{
 					try
 					{
-						SendGridClient client = new SendGridClient("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");
+						SendGridClient client = new SendGridClient(_sendGridApiKey);
 						EmailAddress emailAddress = new EmailAddress("alerts@directsubmit.com", "DirectSubmit");
 						EmailAddress to = new EmailAddress(recipient);
 						SendGridMessage msg = MailHelper.CreateSingleEmail(emailAddress, to, subject, null, htmlBody);
@@ -239,8 +249,8 @@ public class EmailService
 				string toEmail = row["ToEmail"]?.ToString()?.Trim() ?? "";
 				string subject = row["Subject"]?.ToString() ?? "";
 				string body = row["Body"]?.ToString() ?? "";
-				bool success = SendRoleAlertEmail(toEmail, subject, body);
-				UpdateQueueStatus(id, success, success ? null : "SendGrid send failed");
+				bool success = SendRoleAlertEmail(toEmail, subject, body, out string? failureReason);
+				UpdateQueueStatus(id, success, success ? null : (failureReason ?? "SendGrid send failed"));
 			}
 			catch (Exception ex)
 			{
@@ -303,7 +313,7 @@ public class EmailService
 	{
 		try
 		{
-			SendGridClient sendGridClient = new SendGridClient("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");
+			SendGridClient sendGridClient = new SendGridClient(_sendGridApiKey);
 			EmailAddress emailAddress = new EmailAddress("help@directsubmit.com", "DirectSubmit");
 			EmailAddress to = new EmailAddress(toEmail);
 			SendGridMessage msg = MailHelper.CreateSingleEmail(emailAddress, to, subject, null, body);

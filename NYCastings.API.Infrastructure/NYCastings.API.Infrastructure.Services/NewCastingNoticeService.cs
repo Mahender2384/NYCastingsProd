@@ -47,7 +47,7 @@ public class NewCastingNoticeService : BaseApiService, INewCastingNoticeService
 		}
 		_dbManager = new DbManager(dbConfig.Value.NYCasting);
 		_httpContextAccessor = httpContextAccessor;
-		_emailService = new EmailService(dbConfig);
+		_emailService = new EmailService(dbConfig, configuration);
 		_chatHub = chatHub;
 	}
 

@@ -5,6 +5,7 @@ using System.Linq;
 using System.Net;
 using System.Text;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
 using NYCasting.Core.Models;
 using NYCasting.Infrastructure.DataAccess;
@@ -19,10 +20,10 @@ public class RoleAlertService
 
 	private readonly IHttpContextAccessor _httpContextAccessor;
 
-	public RoleAlertService(IOptions<ConnectionString> dbConfig, IHttpContextAccessor httpContextAccessor)
+	public RoleAlertService(IOptions<ConnectionString> dbConfig, IHttpContextAccessor httpContextAccessor, IConfiguration configuration)
 	{
 		_dbManager = new DbManager(dbConfig.Value.NYCasting);
-		_emailService = new EmailService(dbConfig);
+		_emailService = new EmailService(dbConfig, configuration);
 		_httpContextAccessor = httpContextAccessor;
 	}
 

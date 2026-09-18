@@ -47,7 +47,7 @@ public class UserService : BaseApiService, IUserService
 		}
 		_dbManager = new DbManager(dbConfig.Value.NYCasting);
 		_jwtSecret = configuration["Jwt:Key"] ?? throw new ArgumentNullException("Jwt:Key is missing in configuration.");
-		_emailService = new EmailService(dbConfig);
+		_emailService = new EmailService(dbConfig, configuration);
 	}
 
 	public bool AddUserDetails(AddUserDetails userDetails)
