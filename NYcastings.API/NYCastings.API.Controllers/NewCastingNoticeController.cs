@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
@@ -10,6 +11,7 @@ using NYCastings.API.Core.Models.ArchiveMessageDetailsModel;
 using NYCastings.API.Core.Models.ClientDetailsModel;
 using NYCastings.API.Core.Models.DeleteMessagesModel;
 using NYCastings.API.Core.Models.FavoriteModel;
+using NYCastings.API.Core.Models.FileUploadModel;
 using NYCastings.API.Core.Models.InboxMessageDetailsModel;
 using NYCastings.API.Core.Models.MessageModel;
 using NYCastings.API.Core.Models.NewCastingNoticeModel;
@@ -114,6 +116,39 @@ public class NewCastingNoticeController : ControllerBase
 			{
 				Message = ex.Message
 			};
+		}
+	}
+
+	[HttpPost("UploadFiles")]
+	[Consumes("multipart/form-data")]
+	public async Task<IActionResult> UploadFiles(List<IFormFile> files)
+	{
+		try
+		{
+			_logger.LogInformation("UploadFiles method called at {Timestamp}", DateTime.UtcNow);
+			List<UploadedFileResult> result = await _castingNoticeService.UploadFilesAsync(files);
+			return Ok(new PaginationResponse
+			{
+				Status = "Ok",
+				Data = result
+			});
+		}
+		catch (ArgumentException ex)
+		{
+			return BadRequest(new PaginationResponse
+			{
+				Status = "Error",
+				Message = ex.Message
+			});
+		}
+		catch (Exception ex)
+		{
+			_logger.LogError(ex, "An error occurred while uploading files at {Timestamp}", DateTime.UtcNow);
+			return StatusCode(500, new PaginationResponse
+			{
+				Status = "Error",
+				Message = ex.Message
+			});
 		}
 	}
 

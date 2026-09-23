@@ -15,6 +15,7 @@ using NYCastings.API.Core.Contracts.NewCastingNoticeInterface;
 using NYCastings.API.Core.Models.ArchiveMessageDetailsModel;
 using NYCastings.API.Core.Models.ClientDetailsModel;
 using NYCastings.API.Core.Models.FavoriteModel;
+using NYCastings.API.Core.Models.FileUploadModel;
 using NYCastings.API.Core.Models.InboxMessageDetailsModel;
 using NYCastings.API.Core.Models.MessageModel;
 using NYCastings.API.Core.Models.NewCastingNoticeModel;
@@ -133,6 +134,46 @@ public class NewCastingNoticeService : BaseApiService, INewCastingNoticeService
 		string procedureName = "USP_ADD_NEW_ROLECREATOR";
 		Dictionary<string, object> parameters = TakeRoleDataFields(roleDetails);
 		return _dbManager.InsertOrUpdateData(procedureName, CommandType.StoredProcedure, parameters);
+	}
+
+	public async Task<List<UploadedFileResult>> UploadFilesAsync(List<IFormFile> files)
+	{
+		if (files == null || files.Count == 0)
+		{
+			throw new ArgumentException("No files were provided.");
+		}
+		string baseDirectory = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Uploads");
+		if (!Directory.Exists(baseDirectory))
+		{
+			Directory.CreateDirectory(baseDirectory);
+		}
+		HttpRequest request = _httpContextAccessor.HttpContext?.Request;
+		string baseUrl = ((request != null) ? $"{request.Scheme}://{request.Host}/uploads" : "/uploads");
+		List<UploadedFileResult> results = new List<UploadedFileResult>();
+		foreach (IFormFile file in files)
+		{
+			if (file == null || file.Length == 0)
+			{
+				continue;
+			}
+			string uniqueFileName = Guid.NewGuid().ToString() + Path.GetExtension(file.FileName);
+			string filePath = Path.Combine(baseDirectory, uniqueFileName);
+			using (FileStream stream = new FileStream(filePath, FileMode.Create))
+			{
+				await file.CopyToAsync(stream);
+			}
+			results.Add(new UploadedFileResult
+			{
+				FileName = file.FileName,
+				Url = baseUrl + "/" + uniqueFileName,
+				SizeBytes = file.Length
+			});
+		}
+		if (results.Count == 0)
+		{
+			throw new ArgumentException("No valid files were provided.");
+		}
+		return results;
 	}
 
 	private bool FileNeedsUpdate(string existingFilePath, IFormFile newFile)

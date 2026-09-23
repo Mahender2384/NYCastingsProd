@@ -1,8 +1,10 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Http;
 using NYCastings.API.Core.Models.ArchiveMessageDetailsModel;
 using NYCastings.API.Core.Models.ClientDetailsModel;
 using NYCastings.API.Core.Models.FavoriteModel;
+using NYCastings.API.Core.Models.FileUploadModel;
 using NYCastings.API.Core.Models.InboxMessageDetailsModel;
 using NYCastings.API.Core.Models.MessageModel;
 using NYCastings.API.Core.Models.NewCastingNoticeModel;
@@ -24,6 +26,8 @@ public interface INewCastingNoticeService
 	bool DeleteCastingNoticeData(int noticeId);
 
 	Task<bool> AddOrUpdateRoleWithFile(AddRoleDetails roleDetails);
+
+	Task<List<UploadedFileResult>> UploadFilesAsync(List<IFormFile> files);
 
 	IEnumerable<GetRoleDetails> GetRoleDetails(int? roleId, int? noticeId, string? roleName, string? sex);
 
