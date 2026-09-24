@@ -676,4 +676,16 @@ public class UserService : BaseApiService, IUserService
 			}
 		});
 	}
+
+	public bool UnsubscribeEventMail(int userId, string email)
+	{
+		return _dbManager.InsertOrUpdateData("USP_UNSUBSCRIBE_EVENT_MAIL", CommandType.StoredProcedure, new Dictionary<string, object>
+		{
+			{ "@UserId", userId },
+			{
+				"@Email",
+				((object)email) ?? ((object)DBNull.Value)
+			}
+		});
+	}
 }

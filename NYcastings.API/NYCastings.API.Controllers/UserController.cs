@@ -694,4 +694,16 @@ public class UserController : ControllerBase
 		string message = (isSuccess ? "You have been unsubscribed and will no longer receive Role Alert emails." : "We couldn't process your unsubscribe request. Please try again later.");
 		return Content($"<html><body style='font-family:Arial;text-align:center;padding:40px;'><h2>{(isSuccess ? "Unsubscribed" : "Something went wrong")}</h2><p>{message}</p></body></html>", "text/html");
 	}
+
+	[HttpGet("UnsubscribeEventMail")]
+	public IActionResult UnsubscribeEventMail([FromQuery] int userId, [FromQuery] string email)
+	{
+		if (userId <= 0)
+		{
+			return BadRequest("Invalid unsubscribe request.");
+		}
+		bool isSuccess = _userService.UnsubscribeEventMail(userId, email);
+		string message = (isSuccess ? "You have been unsubscribed and will no longer receive event emails." : "We couldn't process your unsubscribe request. Please try again later.");
+		return Content($"<html><body style='font-family:Arial;text-align:center;padding:40px;'><h2>{(isSuccess ? "Unsubscribed" : "Something went wrong")}</h2><p>{message}</p></body></html>", "text/html");
+	}
 }

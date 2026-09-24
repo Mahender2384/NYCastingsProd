@@ -77,4 +77,6 @@ public interface IUserService
 	IEnumerable<CountryCodeModel> GetCountryCodes();
 
 	bool UnsubscribeUser(int userId, string email);
+
+	bool UnsubscribeEventMail(int userId, string email);
 }
