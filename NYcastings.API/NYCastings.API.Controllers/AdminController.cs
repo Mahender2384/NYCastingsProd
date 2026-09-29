@@ -1202,4 +1202,60 @@ public class AdminController : ControllerBase
 			});
 		}
 	}
+
+	[HttpPost("VerifyAndDeactivateInactiveSubscribers")]
+	public async Task<IActionResult> VerifyAndDeactivateInactiveSubscribers([FromBody] SubscriberDeactivationRequest request)
+	{
+		try
+		{
+			List<SubscriberDeactivationResult> results = await _adminService.VerifyAndDeactivateInactiveSubscribersAsync(request);
+			return Ok(new
+			{
+				status = "Success",
+				applied = request?.ApplyChanges ?? false,
+				count = results.Count,
+				data = results
+			});
+		}
+		catch (Exception exception)
+		{
+			_logger.LogError(exception, "VerifyAndDeactivateInactiveSubscribers failed");
+			return StatusCode(500, new
+			{
+				status = "Error",
+				message = "Unable to verify subscribers."
+			});
+		}
+	}
+
+	[HttpGet("GetEmailContent")]
+	public IActionResult GetEmailContent([FromQuery] long id)
+	{
+		try
+		{
+			EmailQueueItemModel data = _adminService.GetEmailContentById(id);
+			if (data == null)
+			{
+				return NotFound(new
+				{
+					status = "NotFound",
+					message = "Email not found."
+				});
+			}
+			return Ok(new
+			{
+				status = "Success",
+				data
+			});
+		}
+		catch (Exception exception)
+		{
+			_logger.LogError(exception, "GetEmailContent failed");
+			return StatusCode(500, new
+			{
+				status = "Error",
+				message = "Unable to load email content."
+			});
+		}
+	}
 }

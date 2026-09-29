@@ -120,4 +120,8 @@ public interface IAdminService
 	IEnumerable<BulkEmailBatchModel> GetBulkEmailBatches(DateTime? fromDate, DateTime? toDate);
 
 	BulkEmailDetailResponse GetBulkEmailDetails(int? noticeId, bool eventOnly, string subject, string status, string searchEmail, DateTime? fromDate, DateTime? toDate, int page, int pageSize);
+
+	EmailQueueItemModel GetEmailContentById(long id);
+
+	Task<List<SubscriberDeactivationResult>> VerifyAndDeactivateInactiveSubscribersAsync(SubscriberDeactivationRequest request);
 }

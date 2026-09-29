@@ -1644,4 +1644,82 @@ public class AdminService : BaseApiService, IAdminService
 		}
 		return response;
 	}
+
+	public async Task<List<SubscriberDeactivationResult>> VerifyAndDeactivateInactiveSubscribersAsync(SubscriberDeactivationRequest request)
+	{
+		List<SubscriberDeactivationResult> results = new List<SubscriberDeactivationResult>();
+		if (request?.Emails == null)
+		{
+			return results;
+		}
+		foreach (string rawEmail in request.Emails.Where((string e) => !string.IsNullOrWhiteSpace(e)).Distinct(StringComparer.OrdinalIgnoreCase))
+		{
+			string email = rawEmail.Trim();
+			try
+			{
+				SubscriptionDetailsModel subscription = await GetSubscriptionDetailsByEmail(email);
+				if (subscription != null && string.Equals(subscription.Status, "active", StringComparison.OrdinalIgnoreCase))
+				{
+					results.Add(new SubscriberDeactivationResult
+					{
+						Email = email,
+						ChargebeeStatus = subscription.Status,
+						Action = "SkippedStillActive",
+						Message = "Chargebee shows an active subscription; not deactivated."
+					});
+					continue;
+				}
+				string action = "ConfirmedInactive";
+				string message = "No active Chargebee subscription found. Not applied (preview only).";
+				if (request.ApplyChanges)
+				{
+					bool deactivated = UpdateUserActiveStatusByEmail(email, isActive: false);
+					action = (deactivated ? "Deactivated" : "DeactivationFailed");
+					message = (deactivated ? "User deactivated." : "No matching user record was updated.");
+				}
+				results.Add(new SubscriberDeactivationResult
+				{
+					Email = email,
+					ChargebeeStatus = subscription?.Status,
+					Action = action,
+					Message = message
+				});
+			}
+			catch (Exception ex)
+			{
+				results.Add(new SubscriberDeactivationResult
+				{
+					Email = email,
+					Action = "Error",
+					Message = ex.Message
+				});
+			}
+		}
+		return results;
+	}
+
+	public EmailQueueItemModel GetEmailContentById(long id)
+	{
+		DataTable dt = _dbManager.ReadData("USP_GET_EMAILQUEUE_BY_ID", CommandType.StoredProcedure, new Dictionary<string, object> { { "@Id", id } });
+		if (dt == null || dt.Rows.Count == 0)
+		{
+			return null;
+		}
+		DataRow r = dt.Rows[0];
+		return new EmailQueueItemModel
+		{
+			Id = Convert.ToInt64(r["Id"]),
+			NoticeId = ((r["NoticeId"] != DBNull.Value) ? new int?(Convert.ToInt32(r["NoticeId"])) : ((int?)null)),
+			RoleId = ((r["RoleId"] != DBNull.Value) ? new int?(Convert.ToInt32(r["RoleId"])) : ((int?)null)),
+			ToEmail = r["ToEmail"].ToString(),
+			Subject = r["Subject"].ToString(),
+			Body = ((r["Body"] != DBNull.Value) ? r["Body"].ToString() : null),
+			Status = r["Status"].ToString(),
+			RetryCount = ((r["RetryCount"] != DBNull.Value) ? Convert.ToInt32(r["RetryCount"]) : 0),
+			ErrorMessage = ((r["ErrorMessage"] != DBNull.Value) ? r["ErrorMessage"].ToString() : null),
+			CreatedAt = Convert.ToDateTime(r["CreatedAt"]),
+			ProcessedAt = ((r["ProcessedAt"] != DBNull.Value) ? new DateTime?(Convert.ToDateTime(r["ProcessedAt"])) : ((DateTime?)null)),
+			SentAt = ((r["SentAt"] != DBNull.Value) ? new DateTime?(Convert.ToDateTime(r["SentAt"])) : ((DateTime?)null))
+		};
+	}
 }
