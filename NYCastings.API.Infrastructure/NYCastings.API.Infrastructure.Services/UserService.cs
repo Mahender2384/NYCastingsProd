@@ -152,7 +152,8 @@ public class UserService : BaseApiService, IUserService
 			CompanyName = row["CompanyName"].ToString(),
 			PhoneNumber = row["PhoneNumber"].ToString(),
 			VerifiedDirector = Convert.ToBoolean(row["VerifiedDirector"]),
-			TotalCredits = ((row["TotalCredits"] != DBNull.Value) ? Convert.ToInt32(row["TotalCredits"]) : 0)
+			TotalCredits = ((row["TotalCredits"] != DBNull.Value) ? Convert.ToInt32(row["TotalCredits"]) : 0),
+			IsDeleted = (row["IsDeleted"] != DBNull.Value && Convert.ToBoolean(row["IsDeleted"]))
 		};
 	}
 
@@ -168,6 +169,17 @@ public class UserService : BaseApiService, IUserService
 				data = (object)null,
 				count = 0,
 				httpStatusCode = 401
+			};
+		}
+		if (user.IsDeleted)
+		{
+			return new
+			{
+				status = "Error",
+				message = "This account has been deleted.",
+				data = (object)null,
+				count = 0,
+				httpStatusCode = 403
 			};
 		}
 		try

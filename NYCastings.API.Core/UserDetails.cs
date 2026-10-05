@@ -31,4 +31,6 @@ public class UserDetails
 	public bool VerifiedDirector { get; set; }
 
 	public int TotalCredits { get; set; }
+
+	public bool IsDeleted { get; set; }
 }

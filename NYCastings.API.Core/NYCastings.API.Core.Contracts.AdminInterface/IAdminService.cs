@@ -117,6 +117,8 @@ public interface IAdminService
 
 	(int QueuedCount, string Message) SendEventMail(SendEventMailRequestModel request);
 
+	Task<(int SentCount, string Message)> SendTestEventMailAsync(SendEventMailRequestModel request);
+
 	IEnumerable<BulkEmailBatchModel> GetBulkEmailBatches(DateTime? fromDate, DateTime? toDate);
 
 	BulkEmailDetailResponse GetBulkEmailDetails(int? noticeId, bool eventOnly, string subject, string status, string searchEmail, DateTime? fromDate, DateTime? toDate, int page, int pageSize);

@@ -1149,6 +1149,38 @@ public class AdminController : ControllerBase
 		}
 	}
 
+	[HttpPost("SendTestEventMail")]
+	public async Task<IActionResult> SendTestEventMail([FromBody] SendEventMailRequestModel request)
+	{
+		if (request == null || string.IsNullOrWhiteSpace(request.Subject) || string.IsNullOrWhiteSpace(request.MessageBody))
+		{
+			return BadRequest(new
+			{
+				message = "Subject and MessageBody are required."
+			});
+		}
+		try
+		{
+			var (sentCount, message) = await _adminService.SendTestEventMailAsync(request);
+			_logger.LogInformation("SendTestEventMail sent {Count} test email(s).", sentCount);
+			return Ok(new
+			{
+				status = "Success",
+				sentCount,
+				message
+			});
+		}
+		catch (Exception exception)
+		{
+			_logger.LogError(exception, "SendTestEventMail failed");
+			return StatusCode(500, new
+			{
+				status = "Error",
+				message = "Failed to send test email."
+			});
+		}
+	}
+
 	[HttpGet("GetBulkEmailBatches")]
 	public IActionResult GetBulkEmailBatches([FromQuery] DateTime? fromDate = null, [FromQuery] DateTime? toDate = null)
 	{
