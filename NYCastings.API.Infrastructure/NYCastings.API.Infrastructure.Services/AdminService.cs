@@ -212,7 +212,7 @@ public class AdminService : BaseApiService, IAdminService
 		return roleList;
 	}
 
-	public PaginatedUnapprovedNoticeResponse GetUnapprovedNotices(string status, string email, int page, int pageSize, string sortOrder)
+	public PaginatedUnapprovedNoticeResponse GetUnapprovedNotices(string status, string email, string search, int page, int pageSize, string sortOrder)
 	{
 		Dictionary<string, object> parameters = new Dictionary<string, object>
 		{
@@ -223,6 +223,10 @@ public class AdminService : BaseApiService, IAdminService
 			{
 				"@Email",
 				((object)email) ?? ((object)DBNull.Value)
+			},
+			{
+				"@Search",
+				string.IsNullOrWhiteSpace(search) ? ((object)DBNull.Value) : ((object)search.Trim())
 			},
 			{ "@Page", page },
 			{ "@PageSize", pageSize },
@@ -1213,6 +1217,10 @@ public class AdminService : BaseApiService, IAdminService
 			{
 				return "";
 			}
+			if (s.IndexOf("<p", StringComparison.OrdinalIgnoreCase) >= 0 || s.IndexOf("<br", StringComparison.OrdinalIgnoreCase) >= 0)
+			{
+				return s;
+			}
 			return Enc(s).Replace("\r\n", "<br/>").Replace("\n", "<br/>").Replace("\r", "<br/>");
 		}
 	}
@@ -1296,6 +1304,10 @@ public class AdminService : BaseApiService, IAdminService
 			if (string.IsNullOrWhiteSpace(s))
 			{
 				return "";
+			}
+			if (s.IndexOf("<p", StringComparison.OrdinalIgnoreCase) >= 0 || s.IndexOf("<br", StringComparison.OrdinalIgnoreCase) >= 0)
+			{
+				return s;
 			}
 			return Enc(s).Replace("\r\n", "<br/>").Replace("\n", "<br/>").Replace("\r", "<br/>");
 		}
@@ -1543,21 +1555,17 @@ public class AdminService : BaseApiService, IAdminService
 			return (SentCount: 0, Message: "No test recipients configured.");
 		}
 		string testSubject = "[TEST] " + request.Subject;
+		List<string> testEmails = dt.Rows.Cast<DataRow>().Select((DataRow row) => row["Email"]?.ToString()?.Trim()).Where((string e) => !string.IsNullOrWhiteSpace(e)).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
 		int sentCount = 0;
-		foreach (DataRow row in dt.Rows)
+		foreach (string testEmail in testEmails)
 		{
-			string testEmail = row["Email"]?.ToString();
-			if (string.IsNullOrWhiteSpace(testEmail))
-			{
-				continue;
-			}
 			if (_emailService.SendRoleAlertEmail(testEmail, testSubject, htmlBody))
 			{
 				sentCount++;
 			}
 			await Task.Delay(200);
 		}
-		return (SentCount: sentCount, Message: $"Test email sent to {sentCount} of {dt.Rows.Count} recipient(s).");
+		return (SentCount: sentCount, Message: $"Test email sent to {sentCount} of {testEmails.Count} recipient(s).");
 	}
 
 	private string BuildEventEmailBody(string subject, string messageBody)
@@ -1569,7 +1577,7 @@ public class AdminService : BaseApiService, IAdminService
 		return $"<!DOCTYPE html>\r\n            <html>\r\n            <head>\r\n              <meta charset='UTF-8'/>\r\n              <meta name='viewport' content='width=device-width, initial-scale=1.0'/>\r\n            </head>\r\n            <body style='margin:0;padding:0;background:#f4f4f4;font-family:Arial,sans-serif;font-size:14px;color:#333333;'>\r\n\r\n            <table width='100%' cellpadding='0' cellspacing='0' border='0' style='background:#f4f4f4;'>\r\n            <tr><td align='center' style='padding:20px 0;'>\r\n\r\n              <table width='600' cellpadding='0' cellspacing='0' border='0'\r\n                     style='background:#ffffff;border:1px solid #dddddd;'>\r\n\r\n                <!-- HEADER -->\r\n                <tr>\r\n                  <td style='background:#333333;padding:0;text-align:center;'>\r\n                    <img src='https://files.constantcontact.com/82886fe2301/302cc6b2-5b9a-4673-8b39-143010d6b262.jpg?rdr=true'\r\n                         alt='DirectSubmit' width='600'\r\n                         style='display:block;width:100%;max-width:600px;border:0;'/>\r\n                  </td>\r\n                </tr>\r\n\r\n                <!-- BLUE BANNER -->\r\n                <tr>\r\n                  <td style='background:#789eeb;padding:14px 30px;'>\r\n                    <span style='color:#ffffff;font-size:18px;font-weight:bold;'>\r\n                      {safeSubject}\r\n                    </span>\r\n                  </td>\r\n                </tr>\r\n\r\n                <!-- BODY — plain paragraphs only -->\r\n                <tr>\r\n                  <td style='background:#ffffff;padding:28px 30px;\r\n                             font-family:Arial,sans-serif;font-size:14px;\r\n                             color:#333333;line-height:1.6;'>\r\n\r\n                    <p style='margin:0 0 16px;'></p>\r\n\r\n                    {paragraphs}\r\n\r\n                    <p style='margin:24px 0 24px;'>\r\n                      <a href='https://directsubmit.nycastings.com/login'\r\n                         style='background:#789eeb;color:#ffffff;\r\n                                padding:12px 28px;text-decoration:none;\r\n                                border-radius:4px;font-size:14px;\r\n                                font-weight:bold;display:inline-block;'>\r\n                        Login to Your Account\r\n                      </a>\r\n                    </p>\r\n\r\n                    <p style='margin:0;'>\r\n                      Thank you,<br/>\r\n                      The DirectSubmit Team\r\n                    </p>\r\n\r\n                  </td>\r\n                </tr>\r\n\r\n                <!-- DIVIDER -->\r\n                <tr>\r\n                  <td style='padding:0 30px;background:#ffffff;'>\r\n                    <hr style='border:none;border-top:1px solid #dddddd;margin:0;'/>\r\n                  </td>\r\n                </tr>\r\n\r\n                <!-- FOOTER -->\r\n                <tr>\r\n                  <td style='background:#ffffff;padding:14px 20px;text-align:center;\r\n                             font-family:Arial,sans-serif;font-size:12px;color:#888888;line-height:1.6;'>\r\n                    <p style='margin:0 0 4px;'>\r\n                      By using the DirectSubmit platform, you agree to the terms and conditions of our\r\n                      <a href='https://directsubmit.nycastings.com/terms-and-condition'\r\n                         target='_blank' style='color:#4d90fe;text-decoration:underline;'>Terms of Service</a>\r\n                      and\r\n                      <a href='https://directsubmit.nycastings.com/privacy-policy'\r\n                         target='_blank' style='color:#4d90fe;text-decoration:underline;'>Privacy Policy</a>.\r\n                      &copy; DirectSubmit\r\n                    </p>\r\n                    <p style='margin:0;text-align:center;background:#333333;padding:10px;font-size:13px;color:#ffffff;'>\r\n                      <a href='https://directsubmit.nycastings.com'\r\n                         style='color:#4d90fe;text-decoration:none;'>DirectSubmit.com</a>\r\n                      &nbsp;|&nbsp; 1480 Vine St. &nbsp;|&nbsp; Los Angeles, CA 90028\r\n                    </p>\r\n                    <p style='margin:8px 0 0;text-align:center;font-size:11px;color:#aaaaaa;'>\r\n                      <a href='{{{{UnsubscribeUrl}}}}'\r\n                         style='color:#aaaaaa;text-decoration:underline;'>Unsubscribe from event emails</a>\r\n                    </p>\r\n                  </td>\r\n                </tr>\r\n\r\n              </table>\r\n\r\n            </td></tr>\r\n            </table>\r\n            </body>\r\n            </html>";
 	}
 
-	public IEnumerable<BulkEmailBatchModel> GetBulkEmailBatches(DateTime? fromDate, DateTime? toDate)
+	public BulkEmailBatchResponse GetBulkEmailBatches(DateTime? fromDate, DateTime? toDate, int page, int pageSize)
 	{
 		DataTable dt = _dbManager.ReadData("USP_GET_BULK_EMAIL_BATCHES", CommandType.StoredProcedure, new Dictionary<string, object>
 		{
@@ -1580,17 +1588,25 @@ public class AdminService : BaseApiService, IAdminService
 			{
 				"@ToDate",
 				((object)toDate) ?? DBNull.Value
-			}
+			},
+			{ "@Page", page },
+			{ "@PageSize", pageSize }
 		});
-		List<BulkEmailBatchModel> list = new List<BulkEmailBatchModel>();
+		BulkEmailBatchResponse response = new BulkEmailBatchResponse
+		{
+			Page = page,
+			PageSize = pageSize
+		};
 		if (dt == null || dt.Rows.Count == 0)
 		{
-			return list;
+			return response;
 		}
 		foreach (DataRow r in dt.Rows)
 		{
-			list.Add(new BulkEmailBatchModel
+			response.TotalCount = Convert.ToInt32(r["TotalCount"]);
+			response.Items.Add(new BulkEmailBatchModel
 			{
+				EmailId = ((r["EmailId"] != DBNull.Value) ? new int?(Convert.ToInt32(r["EmailId"])) : ((int?)null)),
 				BatchType = r["BatchType"].ToString(),
 				NoticeId = ((r["NoticeId"] != DBNull.Value) ? new int?(Convert.ToInt32(r["NoticeId"])) : ((int?)null)),
 				NoticeTitle = ((r["NoticeTitle"] != DBNull.Value) ? r["NoticeTitle"].ToString() : null),
@@ -1603,7 +1619,7 @@ public class AdminService : BaseApiService, IAdminService
 				LastSentAt = ((r["LastSentAt"] != DBNull.Value) ? new DateTime?(Convert.ToDateTime(r["LastSentAt"])) : ((DateTime?)null))
 			});
 		}
-		return list;
+		return response;
 	}
 
 	public BulkEmailDetailResponse GetBulkEmailDetails(int? noticeId, bool eventOnly, string subject, string status, string searchEmail, DateTime? fromDate, DateTime? toDate, int page, int pageSize)

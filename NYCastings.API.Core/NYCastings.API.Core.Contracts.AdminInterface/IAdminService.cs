@@ -51,7 +51,7 @@ public interface IAdminService
 
 	NoticeStatusCountResponseModel GetNoticeStatusCounts();
 
-	PaginatedUnapprovedNoticeResponse GetUnapprovedNotices(string status, string email, int page, int pageSize, string sortOrder);
+	PaginatedUnapprovedNoticeResponse GetUnapprovedNotices(string status, string email, string search, int page, int pageSize, string sortOrder);
 
 	bool SaveOrUpdateCreditMaster(CreditMasterRequestModel model);
 
@@ -119,7 +119,7 @@ public interface IAdminService
 
 	Task<(int SentCount, string Message)> SendTestEventMailAsync(SendEventMailRequestModel request);
 
-	IEnumerable<BulkEmailBatchModel> GetBulkEmailBatches(DateTime? fromDate, DateTime? toDate);
+	BulkEmailBatchResponse GetBulkEmailBatches(DateTime? fromDate, DateTime? toDate, int page, int pageSize);
 
 	BulkEmailDetailResponse GetBulkEmailDetails(int? noticeId, bool eventOnly, string subject, string status, string searchEmail, DateTime? fromDate, DateTime? toDate, int page, int pageSize);
 

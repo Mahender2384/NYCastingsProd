@@ -210,11 +210,11 @@ public class AdminController : ControllerBase
 	}
 
 	[HttpGet("GetApprovedorunApprovedNotices")]
-	public IActionResult GetUnapprovedNotices(string status = null, string email = null, int Page = 1, int PageSize = 10, string sortOrder = "Desc")
+	public IActionResult GetUnapprovedNotices(string status = null, string email = null, string search = null, int Page = 1, int PageSize = 10, string sortOrder = "Desc")
 	{
 		try
 		{
-			PaginatedUnapprovedNoticeResponse result = _adminService.GetUnapprovedNotices(status, email, Page, PageSize, sortOrder);
+			PaginatedUnapprovedNoticeResponse result = _adminService.GetUnapprovedNotices(status, email, search, Page, PageSize, sortOrder);
 			return Ok(new PaginationResponse
 			{
 				Status = "Ok",
@@ -1182,11 +1182,19 @@ public class AdminController : ControllerBase
 	}
 
 	[HttpGet("GetBulkEmailBatches")]
-	public IActionResult GetBulkEmailBatches([FromQuery] DateTime? fromDate = null, [FromQuery] DateTime? toDate = null)
+	public IActionResult GetBulkEmailBatches([FromQuery] DateTime? fromDate = null, [FromQuery] DateTime? toDate = null, [FromQuery] int page = 1, [FromQuery] int pageSize = 50)
 	{
+		if (page < 1)
+		{
+			page = 1;
+		}
+		if (pageSize < 1 || pageSize > 500)
+		{
+			pageSize = 50;
+		}
 		try
 		{
-			IEnumerable<BulkEmailBatchModel> data = _adminService.GetBulkEmailBatches(fromDate, toDate);
+			BulkEmailBatchResponse data = _adminService.GetBulkEmailBatches(fromDate, toDate, page, pageSize);
 			return Ok(new
 			{
 				status = "Success",

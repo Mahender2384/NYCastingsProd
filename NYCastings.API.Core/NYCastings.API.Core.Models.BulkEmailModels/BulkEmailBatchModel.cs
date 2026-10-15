@@ -4,6 +4,7 @@ namespace NYCastings.API.Core.Models.BulkEmailModels;
 
 public class BulkEmailBatchModel
 {
+	public int? EmailId { get; set; }
 	public string BatchType { get; set; }
 
 	public int? NoticeId { get; set; }
