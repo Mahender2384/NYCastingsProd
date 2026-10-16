@@ -15,6 +15,7 @@ using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using NYCasting.Core.Models;
 using NYCasting.Infrastructure.DataAccess;
+using NYCastings.API.Infrastructure.Helpers;
 using NYCastings.API.Core.Contracts.AdminInterface;
 using NYCastings.API.Core.Models.Alleventmodels;
 using NYCastings.API.Core.Models.BulkEmailModels;
@@ -1113,7 +1114,7 @@ public class AdminService : BaseApiService, IAdminService
 				where !string.IsNullOrWhiteSpace(u)
 				select u);
 			string noticePay = row["NoticePay"]?.ToString() ?? "";
-			string locationCodes = row["LocationCodes"]?.ToString() ?? "";
+			string locationCodes = LocationDisplayHelper.ToStatesOnly(row["LocationCodes"]?.ToString() ?? "", _dbManager);
 			string noticePosted = ((row["NoticePosted"] != DBNull.Value) ? Convert.ToDateTime(row["NoticePosted"]).ToString("MM/dd/yyyy") : "");
 			string noticeEndDate = ((row["NoticeEndDate"] != DBNull.Value) ? Convert.ToDateTime(row["NoticeEndDate"]).ToString("MM/dd/yyyy") : "TBD");
 			string noticeDescOne = row["NoticeDescriptionOne"]?.ToString() ?? "";

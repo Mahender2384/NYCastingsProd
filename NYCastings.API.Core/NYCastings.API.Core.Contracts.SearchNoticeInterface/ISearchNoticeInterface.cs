@@ -15,7 +15,7 @@ public interface ISearchNoticeInterface
 {
 	IEnumerable<CastingNoticeResponseModel> GetFilteredCastingNotices(CastingNoticeFilterRequest filter);
 
-	IEnumerable<CastingNoticeResponseModel> GetExpiredFilteredCastingNotices(int userId);
+	IEnumerable<CastingNoticeResponseModel> GetExpiredFilteredCastingNotices(int userId, string search = null, string sortOrder = null);
 
 	IEnumerable<LocationModel> GetLocationsByStateAbbreviations(string stateAbbrCsv);
 

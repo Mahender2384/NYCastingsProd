@@ -11,6 +11,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
 using NYCasting.Core.Models;
 using NYCasting.Infrastructure.DataAccess;
+using NYCastings.API.Infrastructure.Helpers;
 using NYCastings.API.Core.Contracts.SearchNoticeInterface;
 using NYCastings.API.Core.Models.DirectSubmitHistoryRequest;
 using NYCastings.API.Core.Models.Filtered_Casting_Notices;
@@ -213,10 +214,26 @@ public class SearchNoticeService : BaseApiService, ISearchNoticeInterface
 		}
 	}
 
-	public IEnumerable<CastingNoticeResponseModel> GetExpiredFilteredCastingNotices(int userId)
+	public IEnumerable<CastingNoticeResponseModel> GetExpiredFilteredCastingNotices(int userId, string search = null, string sortOrder = null)
 	{
 		string procedureName = "USP_GET_EXPIRED_CASTING_NOTICE_FILTERED";
-		Dictionary<string, object> parameters = new Dictionary<string, object> { { "@UserId", userId } };
+		string normalizedSortOrder = sortOrder?.Trim().ToUpperInvariant();
+		if (normalizedSortOrder != "ASC" && normalizedSortOrder != "DESC")
+		{
+			normalizedSortOrder = null;
+		}
+		Dictionary<string, object> parameters = new Dictionary<string, object>
+		{
+			{ "@UserId", userId },
+			{
+				"@Search",
+				string.IsNullOrWhiteSpace(search) ? ((object)DBNull.Value) : ((object)search.Trim())
+			},
+			{
+				"@SortOrder",
+				((object)normalizedSortOrder) ?? ((object)DBNull.Value)
+			}
+		};
 		return (from row in _dbManager.ReadData(procedureName, CommandType.StoredProcedure, parameters).AsEnumerable()
 			group row by row.Field<int>("NoticeId")).Select(delegate(IGrouping<int, DataRow> group)
 		{
@@ -695,7 +712,7 @@ public class SearchNoticeService : BaseApiService, ISearchNoticeInterface
 		StringBuilder rows = new StringBuilder();
 		int rowIndex = 0;
 		AddRow("Email", model.UserMail);
-		AddRow("Location", cityDisplayValue);
+		AddRow("Location", LocationDisplayHelper.ToStatesOnly(cityDisplayValue, _dbManager));
 		AddRow("Job Categories", model.JobCategories);
 		AddRow("Ethnicity", model.Ethnicity);
 		AddRow("Union Status", model.UnionStatus);
@@ -819,7 +836,7 @@ public class SearchNoticeService : BaseApiService, ISearchNoticeInterface
 		}
 		string subject = request.Subject;
 		string EmailDisclaimer = "\r\n                <hr style='margin-top:20px;margin-bottom:10px;' />\r\n                <p style='font-size:11px;color:#888;'>\r\n                    This message was sent to you as part of your subscription to Role Alerts from Direct Submit.<br />\r\n                    You are receiving this email because your preferences match a potential opportunity.<br />\r\n                    To manage your email preferences or unsubscribe, please log in to your profile and visit your notification settings.\r\n                </p>";
-		string body = $"\r\n            <p><strong>Role You May Be a Good Match For</strong></p>\r\n            <p><strong>Project Title:</strong> {request.ProjectTitle}</p>\r\n            <p><strong>Reviewed By:</strong> Casting Director, {request.CastingDirectorName}, CSA</p>\r\n            <p><strong>Talent Type:</strong> {request.TalentGender} | <strong>Age Range:</strong> {request.TalentAgeRange}</p>\r\n\r\n            <p>If you choose to submit, please ensure the following:</p>\r\n            <ul>\r\n                <li>Your video reels are functioning properly.</li>\r\n                <li>Your credits, size card, training, and special skills are filled in correctly and free of spelling errors.</li>\r\n                <li>If you do not currently have any video reels uploaded, please record a self-taped monologue and add it to your resume as soon as possible.</li>\r\n            </ul>\r\n\r\n            <p>This opportunity was selected based on your Role Alerts preferences.</p>\r\n\r\n            <p><strong>Available Location(s):</strong></p>\r\n            <p>{request.LocationList}</p>\r\n        " + EmailDisclaimer;
+		string body = $"\r\n            <p><strong>Role You May Be a Good Match For</strong></p>\r\n            <p><strong>Project Title:</strong> {request.ProjectTitle}</p>\r\n            <p><strong>Reviewed By:</strong> Casting Director, {request.CastingDirectorName}, CSA</p>\r\n            <p><strong>Talent Type:</strong> {request.TalentGender} | <strong>Age Range:</strong> {request.TalentAgeRange}</p>\r\n\r\n            <p>If you choose to submit, please ensure the following:</p>\r\n            <ul>\r\n                <li>Your video reels are functioning properly.</li>\r\n                <li>Your credits, size card, training, and special skills are filled in correctly and free of spelling errors.</li>\r\n                <li>If you do not currently have any video reels uploaded, please record a self-taped monologue and add it to your resume as soon as possible.</li>\r\n            </ul>\r\n\r\n            <p>This opportunity was selected based on your Role Alerts preferences.</p>\r\n\r\n            <p><strong>Available Location(s):</strong></p>\r\n            <p>{LocationDisplayHelper.ToStatesOnly(request.LocationList, _dbManager)}</p>\r\n        " + EmailDisclaimer;
 		await _emailService.SendBulkEmailsAsync(emails, subject, body);
 		return emails.Count;
 	}

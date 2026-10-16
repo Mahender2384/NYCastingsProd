@@ -9,6 +9,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
 using NYCasting.Core.Models;
 using NYCasting.Infrastructure.DataAccess;
+using NYCastings.API.Infrastructure.Helpers;
 
 namespace NYCastings.API.Infrastructure.Services;
 
@@ -47,7 +48,7 @@ public class RoleAlertService
 		string noticePay = firstRow["NoticePay"]?.ToString() ?? "";
 		string noticeDesc = firstRow["NoticeDescription"]?.ToString() ?? "";
 		string noticeDescOne = firstRow["NoticeDescriptionOne"]?.ToString() ?? "";
-		string locationDisplay = firstRow["NoticeLocationDisplay"]?.ToString() ?? "";
+		string locationDisplay = LocationDisplayHelper.ToStatesOnly(firstRow["NoticeLocationDisplay"]?.ToString() ?? "", _dbManager);
 		string noticePosted = ((firstRow["NoticePosted"] != DBNull.Value) ? Convert.ToDateTime(firstRow["NoticePosted"]).ToString("MM/dd/yyyy") : "");
 		string noticeEndDate = ((firstRow["NoticeEndDate"] != DBNull.Value) ? Convert.ToDateTime(firstRow["NoticeEndDate"]).ToString("MM/dd/yyyy") : "TBD");
 		string subject = "Role Alert: " + noticeTitle;

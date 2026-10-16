@@ -67,7 +67,7 @@ public class SearchNoticeController : ControllerBase
 				return BadRequest("Invalid request.");
 			}
 			_logger.LogInformation("Fetching expired casting notices for UserId: {UserId}", request.UserId);
-			IEnumerable<CastingNoticeResponseModel> result = _searchNoticeInterface.GetExpiredFilteredCastingNotices(request.UserId);
+			IEnumerable<CastingNoticeResponseModel> result = _searchNoticeInterface.GetExpiredFilteredCastingNotices(request.UserId, request.Search, request.SortOrder);
 			int totalCount = result.Count();
 			List<CastingNoticeResponseModel> paginatedResults = result.Skip((request.Page - 1) * request.PageSize).Take(request.PageSize).ToList();
 			return Ok(new PaginationResponse
