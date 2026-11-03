@@ -82,7 +82,7 @@ public class ProfileSearchService : BaseApiService, IProfileSearchInterface
 				TalentImage = ((row["TalentImage"] != DBNull.Value) ? row.Field<string>("TalentImage") : string.Empty),
 				HasAudio = (row["HasAudio"] != DBNull.Value && row.Field<string>("HasAudio") == "TRUE"),
 				HasVideo = (row["HasVideo"] != DBNull.Value && row.Field<string>("HasVideo") == "TRUE"),
-				RecordCreatedDate = ((row["RecordCreatedDate"] != DBNull.Value) ? row.Field<DateTime>("RecordCreatedDate") : default(DateTime)),
+				RecordCreatedDate = ((row["RecordCreatedDate"] != DBNull.Value) ? row.Field<DateTime>("RecordCreatedDate") : ((DateTime?)null)),
 				MostLiked = ((row["MostLiked"] != DBNull.Value) ? Convert.ToInt32(row["MostLiked"]) : 0),
 				Favorite = (row["Favorite"] != DBNull.Value && Convert.ToBoolean(row["Favorite"])),
 				TalentEmail = ((row["TalentEmail"] != DBNull.Value) ? row.Field<string>("TalentEmail") : string.Empty),
@@ -123,7 +123,7 @@ public class ProfileSearchService : BaseApiService, IProfileSearchInterface
 				TalentImage = ((row["TalentImage"] != DBNull.Value) ? row.Field<string>("TalentImage") : string.Empty),
 				HasAudio = (row["HasAudio"] != DBNull.Value && row.Field<string>("HasAudio") == "TRUE"),
 				HasVideo = (row["HasVideo"] != DBNull.Value && row.Field<string>("HasVideo") == "TRUE"),
-				RecordCreatedDate = ((row["RecordCreatedDate"] != DBNull.Value) ? row.Field<DateTime>("RecordCreatedDate") : default(DateTime)),
+				RecordCreatedDate = ((row["RecordCreatedDate"] != DBNull.Value) ? row.Field<DateTime>("RecordCreatedDate") : ((DateTime?)null)),
 				MostLiked = ((row["MostLiked"] != DBNull.Value) ? Convert.ToInt32(row["MostLiked"]) : 0),
 				Favorite = (row["Favorite"] != DBNull.Value && Convert.ToBoolean(row["Favorite"]))
 			};

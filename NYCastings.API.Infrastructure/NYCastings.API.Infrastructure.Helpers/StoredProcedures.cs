@@ -36,6 +36,8 @@ public static class StoredProcedures
 
 	public const string USP_GetClientFaveList = "USP_GetClientFaveList";
 
+	public const string USP_IsClientFavoriteTalent = "USP_IsClientFavoriteTalent";
+
 	public const string USP_GETINBOXMESSAGESDETAILS = "USP_GETINBOXMESSAGESDETAILS";
 
 	public const string USP_GETSENTMESSAGEDETAILS = "USP_GETSENTMESSAGEDETAILS";

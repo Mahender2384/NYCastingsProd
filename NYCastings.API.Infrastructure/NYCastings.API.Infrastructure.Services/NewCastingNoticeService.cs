@@ -773,6 +773,22 @@ public class NewCastingNoticeService : BaseApiService, INewCastingNoticeService
 		}
 	}
 
+	public bool IsClientFavoriteTalent(int clientId, int talentId)
+	{
+		string procedureName = "USP_IsClientFavoriteTalent";
+		Dictionary<string, object> parameters = new Dictionary<string, object>
+		{
+			{ "@ClientId", clientId },
+			{ "@TalentId", talentId }
+		};
+		DataTable dataTable = _dbManager.ReadData(procedureName, CommandType.StoredProcedure, parameters);
+		if (dataTable == null || dataTable.Rows.Count == 0 || dataTable.Rows[0]["IsFavorite"] == DBNull.Value)
+		{
+			return false;
+		}
+		return Convert.ToBoolean(dataTable.Rows[0]["IsFavorite"]);
+	}
+
 	public IEnumerable<InboxMessageDetails> GetInboxMessagesDetails(string email, string sortOrder)
 	{
 		if (string.IsNullOrEmpty(email))

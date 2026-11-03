@@ -51,6 +51,8 @@ public interface INewCastingNoticeService
 
 	IEnumerable<ClientFaveTalentModel> GetClientFavTalentDetails(int clientId);
 
+	bool IsClientFavoriteTalent(int clientId, int talentId);
+
 	IEnumerable<InboxMessageDetails> GetInboxMessagesDetails(string email, string sortOrder);
 
 	IEnumerable<SentMessageDetails> GetSentMessagesDetails(string email);

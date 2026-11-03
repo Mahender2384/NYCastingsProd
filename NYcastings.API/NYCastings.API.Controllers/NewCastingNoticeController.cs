@@ -447,6 +447,43 @@ public class NewCastingNoticeController : ControllerBase
 		}
 	}
 
+	[HttpGet("IsClientFavoriteTalent")]
+	public IActionResult IsClientFavoriteTalent(int clientId, int talentId)
+	{
+		try
+		{
+			if (clientId <= 0 || talentId <= 0)
+			{
+				return BadRequest(new PaginationResponse
+				{
+					Status = "Error",
+					Message = "Valid clientId and talentId are required."
+				});
+			}
+			_logger.LogInformation("IsClientFavoriteTalent called at {Timestamp} for ClientId={ClientId}, TalentId={TalentId}", DateTime.UtcNow, clientId, talentId);
+			bool isFavorite = _castingNoticeService.IsClientFavoriteTalent(clientId, talentId);
+			return Ok(new PaginationResponse
+			{
+				Status = "OK",
+				Data = new
+				{
+					ClientId = clientId,
+					TalentId = talentId,
+					IsFavorite = isFavorite
+				}
+			});
+		}
+		catch (Exception ex)
+		{
+			_logger.LogError(ex, "An error occurred in IsClientFavoriteTalent for ClientId={ClientId}, TalentId={TalentId} at {Timestamp}", clientId, talentId, DateTime.UtcNow);
+			return BadRequest(new PaginationResponse
+			{
+				Status = "Error",
+				Message = ex.Message
+			});
+		}
+	}
+
 	[HttpGet("GetClientFavoriteTalentDetails")]
 	public PaginationResponse GetClientFavTalentDetails(int clientId, int page = 1, int pageSize = 10)
 	{

@@ -31,7 +31,7 @@ public class SearchProfilesController : ControllerBase
 		try
 		{
 			_logger.LogInformation("SearchTalentProfiles called at {Timestamp}. Request Parameters: {Request}, Page: {Page}, PageSize: {PageSize}", DateTime.UtcNow, JsonSerializer.Serialize(request), page, pageSize);
-			IEnumerable<SearchProfileModel> allResults = _profileSearchService.SearchProfiles(request);
+			List<SearchProfileModel> allResults = _profileSearchService.SearchProfiles(request).ToList();
 			List<SearchProfileModel> paginatedResults = allResults.Skip((page - 1) * pageSize).Take(pageSize).ToList();
 			return Ok(new PaginationResponse
 			{
@@ -81,7 +81,7 @@ public class SearchProfilesController : ControllerBase
 		try
 		{
 			_logger.LogInformation("GetHidedTalnetDetails method called at {Timestamp}", DateTime.UtcNow);
-			IEnumerable<SearchProfileModel> allResults = _profileSearchService.GetHidedTalentDetails(clientId);
+			List<SearchProfileModel> allResults = _profileSearchService.GetHidedTalentDetails(clientId).ToList();
 			List<SearchProfileModel> paginatedResults = allResults.Skip((page - 1) * pageSize).Take(pageSize).ToList();
 			return Ok(new PaginationResponse
 			{

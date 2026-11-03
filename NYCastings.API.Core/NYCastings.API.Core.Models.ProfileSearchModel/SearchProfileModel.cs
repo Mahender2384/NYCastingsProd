@@ -22,7 +22,7 @@ public class SearchProfileModel
 
 	public bool HasVideo { get; set; }
 
-	public DateTime RecordCreatedDate { get; set; }
+	public DateTime? RecordCreatedDate { get; set; }
 
 	public int MostLiked { get; set; }
 
